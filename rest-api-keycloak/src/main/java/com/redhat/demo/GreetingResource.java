@@ -1,6 +1,7 @@
 package com.redhat.demo;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -51,6 +52,16 @@ public class GreetingResource {
         return "Olá usuário: " + username + ", Somente ADMINISTRADORES podem utilizar este recurso)";
     }
 
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/user")
+    @RolesAllowed("DEFAULT_USER")
+    public String helloUser() {
+        OidcJwtCallerPrincipal oidcPrincipal = getOIDCPrincipal();
+        String username = String.valueOf(oidcPrincipal.claim("preferred_username").orElseThrow());
+        return "Olá usuário: " + username + ", Somente USER podem utilizar este recurso)";
+    }
+
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -60,7 +71,9 @@ public class GreetingResource {
         OidcJwtCallerPrincipal oidcPrincipal = getOIDCPrincipal();
         JsonObject resource_access = (JsonObject) oidcPrincipal.claim("resource_access").get();
         String username = String.valueOf(oidcPrincipal.claim("preferred_username").orElseThrow());
-        return "Olá usuário: " + username+ ",você possui os seguintes perfis:' " +  resource_access.getJsonObject("hello-app").getJsonArray("roles");
+        JsonObject jsonObject = resource_access.getJsonObject("hello-app");
+        JsonArray roles = (jsonObject == null ? null : jsonObject.getJsonArray("roles"));
+        return "Olá usuário: " + username+ ",você possui os seguintes perfis:' " + roles;
     }
 
     private OidcJwtCallerPrincipal getOIDCPrincipal() {

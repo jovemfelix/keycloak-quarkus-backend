@@ -8,58 +8,92 @@ Exemplo de aplicação backend/api desenvolvida em quarkus protegida e integrada
 
 ![Exemplo API Keycloak](assets/Exemplo-API-Keycloak.png)
 
-No nosso exemplo teremos basicamente 3 atores: o **servidor de autorização**, responsável pela emissão de tokens JWTs e representado pelo keycloak, o postman que será utilizado para simular uma aplicação front-end e nossa API REST desenvolvida em quarkus e protegida pelo servidore de autorização.
+No nosso exemplo teremos basicamente 3 atores: 
+
+1. o **servidor de autorização**, responsável pela emissão de tokens JWTs e representado pelo keycloak, 
+2. o postman que será utilizado para simular uma aplicação front-end e 
+3. nossa API REST desenvolvida em quarkus e protegida pelo servidore de autorização.
 
 
 
 Como exemplo serão os seguintes endpoints:
 
-- **/hello** - serviço de acesso público não autenticado 
-- **/hello/default** - serviço autorizado para usuário padrão e administrador
-- **/hello/admin** - serviço autorizado para usuário administrador
-- **/hello/perfis** - serviço autorizado para qualquer usuário autenticado
+- **/hello** - serviço de acesso **público** não autenticado 
+- **/hello/default** - serviço autorizado para usuário **padrão** e **administrador**
+- **/hello/user** - serviço autorizado para usuário **padrão**
+- **/hello/admin** - serviço autorizado para usuário **administrador**
+- **/hello/perfis** - serviço autorizado para qualquer usuário **autenticado**
 
 
 
 Iremos utilizar uma configuração padrão então para os usuários de perfis de acesso baseado em *Roles*(RBAC  - Role Based Access Control), para autorizar os usuários a consumirem as APIs. Teremos então os seguintes usuários com seus repectivos perfis.
 
+### RBAC
+
 | USERNAME     | PASSWORD | CLIENT    | ROLES               |
 | ------------ | -------- | --------- | ------------------- |
 | demo         | 1234     | hello-app | NDA                 |
-| demo-default | 1234     | hello-app | DEFAULT_USER        |
-| demo-admin   | 1234     | hello-app | DEFAULT_USER, ADMIN |
+| demo-default | 1234     | hello-app | DEFAULT_USER, ADMIN |
+| demo-admin   | 1234     | hello-app | ADMIN               |
 
-## Keycloak Authorization Server
+## Authorization Server
+
+> Este exemplo funciona tanto com [keycloak](https://www.keycloak.org,) quando com [RH-SSO](https://access.redhat.com/products/red-hat-single-sign-on)
+>
+> Após baixar o SSO deverá realizar a configuração dos **usuários**, **clients** e **roles** conforme a tabela de usuários apresentada na seção anterior.
+
+### Keycloak
 
 Para facilitar a execução e teste do exemplo estamos disponibilizando um pacote com banco de dados local(h2) já configurado com os usuários, *clients* e *roles* configuradas:
 
 - https://drive.google.com/file/d/18KuC-ROYIebjIiyf-uY0tF3c7UP8fQyS/view?usp=sharing
 
-O keycloak pode ser baixado também no site: https://www.keycloak.org/downloads, com demais opções de execução para desenvolvimento.
+* [Download](https://www.keycloak.org/archive/downloads-18.0.2.html) da versão 18x
+  Para outros tipos de instalação olhar a documentação: https://www.keycloak.org/guides
 
-Deve ser realizado a configuração dos usuários, clients e roles conforme a tabela de usuários apresentada na seção anterior.
+### RHSSO
 
-Para subir o keycloak local:
+* [Download](https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?downloadType=distributions&product=core.service.rhsso) da versão 7.6
+
+
+
+> `SSO_HOME` é o **diretório raiz** do arquivo descompactado acima.
+
+Para subir o SSO local abrir um terminal e executar:
 
 ```shell
-cd $KEYCLOAK_HOME/bin
-sh standalone.sh 
+sh $SSO_HOME/bin/standalone.sh 
 ```
 
-Para executar em portas diferentes, no caso de um pacote ***wildfly***:
+Para executar usando <u>portas diferentes</u>:
 
 ```shell
-cd $KEYCLOAK_HOME/bin
-sh standalone.sh -Djboss.socket.binding.port-offset=100
+sh $SSO_HOME/bin/standalone.sh -Djboss.socket.binding.port-offset=100
 ```
 
-Para outros tipos de instalação olhar a documentação: https://www.keycloak.org/guides
+
+
+## Sugestão de configuração local para o Developer
+
+```shell
+brew tap mike-engel/jwt-cli
+brew install jwt-cli
+```
+
+
 
 ## API hello-app
 
+### Criação da aplicação
+> Para mais informações sobre a criação de projetos quarkus: https://quarkus.io/guides/getting-started
+
+```shell
+quarkus create app com.redhat.demo:rest-api-keycloak:1.0
+```
+
 ### Configuração da aplicação
 
-Extensão quarkus utilizada para OIDC:
+Extensão quarkus utilizada para OIDC após criação do projeto quarkus com quarkus CLI:
 
 ```xml
 <!-- OIDC extensions -->
@@ -69,24 +103,14 @@ Extensão quarkus utilizada para OIDC:
 </dependency>
 ```
 
-Extensão adicionada após criação do projeto quarkus com quarkus CLI:
-
-```shell
-quarkus create app com.redhat.demo:rest-api-keycloak:1.0
-```
-
-Para mais informações sobre a criação de projetos quarkus: https://quarkus.io/guides/getting-started
 
 Depois ajustamos a versão de propriedades para uma versão ***suportada pela Red Hat***, até a redação desta documentação:
 
 ```xml
 <properties>
-  <!-- Omitted properties -->
-	<quarkus.platform.group-id>com.redhat.quarkus.platform</quarkus.platform.group-id>
-  <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-  <quarkus.platform.version>2.7.5.Final-redhat-00011</quarkus.platform.version>
-  <!-- <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id> -->
-  <!-- <quarkus.platform.version>2.10.1.Final</quarkus.platform.version> -->
+    <quarkus.platform.group-id>com.redhat.quarkus.platform</quarkus.platform.group-id>
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.version>2.13.7.Final-redhat-00003</quarkus.platform.version>
 </properties>
 ```
 
@@ -100,7 +124,6 @@ quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/demo
 quarkus.oidc.client-id=hello-app
 quarkus.oidc.credentials.secret=9f7Ah9G3VEMMakeXG8sDNolJdp2wKWoD
 quarkus.oidc.tls.verification=none
-
 ```
 
 Configuração dos ***resources***
@@ -203,11 +226,11 @@ Para executar com maven embarcado:
 ./mvnw quarkus:dev
 ```
 
-### Testes
+### Testes Usando Postman
 
 Para testar o funcionamento das APIs estamos disponibilizando essa Collection do Postman com as chamadas as resources configuradas para execução *localhost*.
 
- [Quarkus Demo.postman_collection.json](./Quarkus Demo.postman_collection.json) 
+ [Quarkus Demo.postman_collection.json](./SSO-Archive/Quarkus-Demo.postman_collection.json) 
 
 #### Obtendo token
 
@@ -217,11 +240,23 @@ Depois que importar a collection para o postman, basta selecionar o resource que
 
 Selecionar o tipo de authorization para ***OAuth 2.0***, e preencher as informações, se necessário:
 
+> As informações a seguir foram obtidas da url:
+> http://localhost:8180/auth/realms/demo/.well-known/openid-configuration
+
 **Grant Type**: Authorization Code
 
 **Auth URL:** http://localhost:8180/auth/realms/demo/protocol/openid-connect/auth
 
+> ```shell
+> curl -s http://localhost:8180/auth/realms/demo/.well-known/openid-configuration | jq .authorization_endpoint
+> ```
+
 **Access Token URL:** http://localhost:8180/auth/realms/demo/protocol/openid-connect/token
+
+> ```shell
+> curl -s http://localhost:8180/auth/realms/demo/.well-known/openid-configuration | jq .token_endpoint                      
+> "http://localhost:8180/auth/realms/demo/protocol/openid-connect/token"
+> ```
 
 **Client-id:** postman
 
@@ -258,3 +293,75 @@ Observer o retorno do serviço:
 
 
 No nosso exemplo, o usuário ***demo*** não está autorizado a acessar o resource ***/hello/default***.
+
+
+
+### Testes usando curl
+
+```shell
+# http://localhost:8180/auth/realms/demo/protocol/openid-connect/token
+SSO_URL=http://localhost:8180
+SSO_REALM_NAME=demo
+
+SSO_TOKEN_URL="$SSO_URL/auth/realms/$SSO_REALM_NAME/protocol/openid-connect/token"
+
+# veja a resposta em JSON
+curl -s -X POST $SSO_TOKEN_URL \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'grant_type=password' \
+-d 'username=demo-admin' \
+-d 'password=1234' \
+-d 'client_id=admin-cli' | jq .access_token
+
+# salvar o token (access_token) numa variavel
+export ACCESS_TOKEN=$(curl -s -X POST $SSO_TOKEN_URL \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'grant_type=password' \
+-d 'username=demo-admin' \
+-d 'password=1234' \
+-d 'client_id=hello-app' \
+-d 'client_secret=QjWnhJZ1SNFhh3iVMkMdjQJzEBdzw9NP' \
+| jq -r .access_token)
+
+# ou assim:
+export ACCESS_TOKEN=$(curl -k -s -X POST $SSO_TOKEN_URL \
+    --user hello-app:QjWnhJZ1SNFhh3iVMkMdjQJzEBdzw9NP \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    -d 'username=demo-admin&password=1234&grant_type=password' | jq -r '.access_token')
+
+curl -v -X GET \
+  http://localhost:8080/hello/default \
+  -H "Authorization: Bearer "$ACCESS_TOKEN
+```
+
+```shell
+jwt decode $ACCESS_TOKEN
+```
+
+```shell
+export ACCESS_TOKEN=$(curl -s -X POST $SSO_TOKEN_URL \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'grant_type=password' \
+-d 'username=admin-x1' \
+-d 'password=1234' \
+-d 'client_id=hello-app' \
+-d 'client_secret=QjWnhJZ1SNFhh3iVMkMdjQJzEBdzw9NP' \
+| jq -r .access_token)
+
+export ACCESS_TOKEN=$(curl -s -X POST $SSO_TOKEN_URL \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'grant_type=password' \
+-d 'username=x2-admin' \
+-d 'password=1234' \
+-d 'client_id=hello-app' \
+-d 'client_secret=QjWnhJZ1SNFhh3iVMkMdjQJzEBdzw9NP' \
+| jq -r .access_token)
+```
+
+
+
+# Referências
+
+* [Red Hat build of Quarkus 2.x Component Details](https://access.redhat.com/articles/6643671) contém informações de versões suportadas
+* Quarkus Guide: [USING OPENID CONNECT (OIDC) TO PROTECT SERVICE APPLICATIONS USING BEARER TOKEN AUTHORIZATION](https://quarkus.io/guides/security-openid-connect)
+
